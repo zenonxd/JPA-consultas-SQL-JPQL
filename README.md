@@ -8,7 +8,9 @@
 - [Salvando entidade associada para um](#salvando-entidade-associada-para-um---pt-1-2-e-3)
     - [Exemplo 1 - Objeto aninhado](#1-objeto-aninhado)
     - [Exemplo 2 - Passando id direto na requisição](#2-passando-somente-o-id-do-department)
-  
+
+- [Salvando entidade associada para muitos](#salvando-entidades-associadas-para-muitos)
+
 
     
 
