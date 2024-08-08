@@ -56,10 +56,21 @@ com seu id, ou passando somente o id do department. Faremos das duas formas!
 
 ### 1. Objeto Aninhado
 
-![img_3.png](img_3.png)
+Requisição Post
+
+```json 
+POST http://localhost:8080/people
+{
+  "name": "Nova Pessoa",
+  "salary": 8000.0,
+  "department": {
+  "id": 1
+  }
+}
+```
 
 
-#### O primeiro passo é criar um DTO para recebermos os dados e instanciar um objeto Java.
+### O primeiro passo é criar um DTO para recebermos os dados e instanciar um objeto Java.
 
 Esse DTO criado, precisa ter os dados da pessoa + o seu departamento, exatamente igual na imagem acima.
 
@@ -67,7 +78,7 @@ Esse DTO criado, precisa ter os dados da pessoa + o seu departamento, exatamente
 
 <hr>
 
-#### O segundo passo é criar um service para realizar a operação
+### O segundo passo é criar um service para realizar a operação
 
 Criaremos o Service juntamente com o método Insert recebendo o DTO criado.
 
@@ -87,7 +98,7 @@ para receber um Department. (Qualquer coisa ver o video na pt2).
 Salva e dá o return.
 <hr>
 
-#### O terceiro passo é criar um controller
+### O terceiro passo é criar um controller
 
 Injetaremos o service e colocaremos na classe o método insert, passando os parâmetros juntamente com a lógica correta.
 
@@ -95,7 +106,7 @@ A lógica é a de sempre... ResponseEntity + URI. (Qualquer coisa ver o video na
 
 <hr>
 
-#### Teste no Postman
+### Teste no Postman
 
 Aqui é só dar o Post no HTTP da imagem acima, juntamente com os pârametros JSON. Ao dar send, deve funcionar.
 
@@ -104,9 +115,18 @@ Aqui é só dar o Post no HTTP da imagem acima, juntamente com os pârametros JS
 
 ### 2. Passando somente o id do department
 
-![img_4.png](img_4.png)
+Requisição Post
 
-#### O primeiro passo é criar o DTO contendo exatamente a estrutura acima (name, salary e departmentID).
+```json
+POST http://localhost:8080/people
+{
+  "name": "Nova Pessoa",
+  "salary": 8000.0,
+  "departmentId": 1
+}
+```
+
+### O primeiro passo é criar o DTO contendo exatamente a estrutura acima (name, salary e departmentID).
 
 Diferente do exemplo acima, essa classe tera um atributo "Long departmentId".
 
@@ -114,24 +134,81 @@ Para pegar o id do department: o construtor de conversão de entidade para DTO, 
 o departamento e pegar seu id. (Qualquer coisa, video pt3)
 <hr>
 
-#### O segundo passo é no service já criado, criar um novo método de insert
+### O segundo passo é no service já criado, criar um novo método de insert
 
 Mas dessa vez, o retorno será PersonDTO e não PersonDepartmentDTO.
 
 O raciocínio de lógica é o mesmo. 
 <hr>
 
-#### O terceiro passo é no Controller criar um novo método de insert também
+### O terceiro passo é no Controller criar um novo método de insert também
 
 Fazer as alterações no método.
 
 <hr>
 
-#### Teste no Postman
+### Teste no Postman
 
 Só dar o HTTP com os dados da imagem acima e esperar a inserção.
 
 ## Salvando entidades associadas para muitos
+
+Quando uma entidade é ManyToMany.
+
+![img_5.png](img_5.png)
+
+[Repositório para fazer o exercício](https://github.com/devsuperior/aula-salvar-para-muitos)
+
+Requisição Post:
+
+```json
+POST http://localhost:8080/products
+        
+{
+    "name": "Produto novo",
+    "price": 1000.0,
+    "categories": [
+      {
+        "id": 2
+      },
+      {
+        "id": 3
+      }
+    ]
+}
+```
+
+A intenção é inserir um novo produto, que terá uma lista de categorias aninhada.
+
+### Primeiro Passo 
+
+Criar os DTOS, tanto de Category quanto de Product, com os seus atributos.
+
+Lembrar também, de criar os construtores para versão a conversão dos datos (de entity para DTO). Qualquer coisa, ver
+a aula "**salvando entidades associadas para muitos**".
+
+A única coisa diferente é: No ProductDTO para converter de entidade para DTO, na parte da lista de categorias, 
+precisamos fazer um for dentro do construtor para inserir direitinho.
+
+![img_6.png](img_6.png)
+<hr>
+
+### Segundo passo
+
+Criar um controller e fazer a lógica de sempre.
+<hr>
+
+### Terceiro passo
+
+Criar um service e fazer a lógica de sempre. 
+A diferença é que para inserir a lista de categorias, precisa fazer um for. Qualquer coisa, ver a aula "**salvando 
+entidades associadas para muitos**".
+<hr>
+
+### Postman
+
+Só fazer um post com a requisição lá de cima e inserir.
+
 
 ## Evitando degradação de perfomance
 
