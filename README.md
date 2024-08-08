@@ -1,13 +1,21 @@
 <p align="center">
-  <img src="https://img.shields.io/static/v1?label=SpringProfessional - Dev Superior&message=API REST, camadas, CRUD, exception, validation&color=8257E5&labelColor=000000" alt="Testes automatizados na prática com Spring Boot" />
+  <img src="https://img.shields.io/static/v1?label=SpringProfessional - Dev Superior&message=JPA, Consultas SQL e JPQL&color=8257E5&labelColor=000000" alt="Testes automatizados na prática com Spring Boot" />
 </p>
 
 
 # Tópicos
 
+- [Salvando entidade associada para um](#salvando-entidade-associada-para-um---pt-1-2-e-3)
+    - [Exemplo 1 - Objeto aninhado](#1-objeto-aninhado)
+    - [Exemplo 2 - Passando id direto na requisição](#2-passando-somente-o-id-do-department)
+  
+
+    
 
 # Objetivo
 
+Esse repositório possui muito conteúdo e referências sobre consulta a banco de dados e sobre ferramenta de ORM (JPA),
+para quando formos realizar operações/casos de uso.
 
 ## Requisitos projeto
 
@@ -18,11 +26,110 @@ Como é algo específico do curso, não colocarei o link, mas você pode adquiri
 
 ## Sessão JPA e estados das entidades
 
-## Salvando entidade associada para um - PT 1
+A JPA faz o gerenciamento das entidades do sistema durante a sessão JPA.
 
-## Salvando entidade associada para um - PT 2
+Uma sessão JPA seria o contexto que JPA está realizando operações com entidades durante uma conexão com o banco de
+dados.
 
-## Salvando entidade associada para um - PT 3
+- EntityManager: é um objeto da JPA que encapsula uma conexão com o banco de dados e que gerencia as entidades durante
+uma sessão JPA.
+
+![img.png](img.png)
+
+O JPA, além disso, gerencia as entidades atribuindo estados a ela. Ou seja, ela tem um ciclo de vida.
+
+![img_1.png](img_1.png)
+
+
+## Salvando entidade associada para um - PT 1, 2 e 3
+
+Quando uma entidade está associada a outra e essa outra, é somente uma. Exemplo:
+
+![img_2.png](img_2.png)
+
+Como salvar uma pessoa associada a um departamento?
+
+[Repositório para fazer o exercício](https://github.com/devsuperior/aula-salvar-para-um)
+
+Temos duas formas de fazer isso: com objeto aninhado, ou seja, passando um nome, salário e um objeto de department 
+com seu id, ou passando somente o id do department. Faremos das duas formas!
+
+### 1. Objeto Aninhado
+
+![img_3.png](img_3.png)
+
+
+#### O primeiro passo é criar um DTO para recebermos os dados e instanciar um objeto Java.
+
+Esse DTO criado, precisa ter os dados da pessoa + o seu departamento, exatamente igual na imagem acima.
+
+**Como não podemos dentro de um DTO usar uma entidade**. Precisaremos também criar um DepartmentDTO.
+
+<hr>
+
+#### O segundo passo é criar um service para realizar a operação
+
+Criaremos o Service juntamente com o método Insert recebendo o DTO criado.
+
+Importar o repository.
+
+Criaremos uma entity Person vazia.
+
+Copiaremos os dados do DTO para a nossa entidade Person.
+
+Para colocar o ID do department dentro da Entity, precisa instanciar um departament para puxar os dados do dto.
+
+Por fim, precisamos converter de Entity para DTO.
+
+Para isso é só nos DTOS, criar um construtor apto a receber um Person. Já no DepartmentDto, ele precisa de um construtor
+para receber um Department. (Qualquer coisa ver o video na pt2).
+
+Salva e dá o return.
+<hr>
+
+#### O terceiro passo é criar um controller
+
+Injetaremos o service e colocaremos na classe o método insert, passando os parâmetros juntamente com a lógica correta.
+
+A lógica é a de sempre... ResponseEntity + URI. (Qualquer coisa ver o video na pt2).
+
+<hr>
+
+#### Teste no Postman
+
+Aqui é só dar o Post no HTTP da imagem acima, juntamente com os pârametros JSON. Ao dar send, deve funcionar.
+
+
+<hr>
+
+### 2. Passando somente o id do department
+
+![img_4.png](img_4.png)
+
+#### O primeiro passo é criar o DTO contendo exatamente a estrutura acima (name, salary e departmentID).
+
+Diferente do exemplo acima, essa classe tera um atributo "Long departmentId".
+
+Para pegar o id do department: o construtor de conversão de entidade para DTO, usaremos entity (parametro), para acessar
+o departamento e pegar seu id. (Qualquer coisa, video pt3)
+<hr>
+
+#### O segundo passo é no service já criado, criar um novo método de insert
+
+Mas dessa vez, o retorno será PersonDTO e não PersonDepartmentDTO.
+
+O raciocínio de lógica é o mesmo. 
+<hr>
+
+#### O terceiro passo é no Controller criar um novo método de insert também
+
+Fazer as alterações no método.
+
+<hr>
+
+#### Teste no Postman
+
+Só dar o HTTP com os dados da imagem acima e esperar a inserção.
 
 ## Salvando entidades associadas para muitos
 
