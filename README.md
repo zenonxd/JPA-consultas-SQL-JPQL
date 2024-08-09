@@ -20,7 +20,27 @@
   - [Otimizando consultas com Join Fetch](#otimizando-consultas-com-cláusula-join-fetch)
   - [Transactional e open-in-view](#entendendo-transactional-e-open-in-view)
 <hr>
-    
+
+- [Alterando atributo fetch dos relacionamentos (não recomendado)](#alterando-o-atributo-fetch-dos-relacionamentos)
+  - [Eager (não recomendado)](#eager)
+  - [Lazy (não recomendado)](#lazy)
+<hr>
+
+- [Otimizando consulta com Join Fetch](#otimizando-consultas-com-cláusula-join-fetch)
+<hr>
+
+- [Entendendo transactional](#entendendo-transactional)
+- [open-in-view](#open-in-view)
+<hr>
+
+- [Consultas customizadas](#consultas-customizadas)
+  - [Query methods](#query-methods)
+    - [Buscando employee por name](#buscando-employee-por-name)
+  - [Introdução JPQL](#introdução-sobre-jpql)
+    - [Exemplo 1 - SQL](#exemplo-1---sql)
+    - [Exemplo 2 - JPQL]()
+  - [Vale a pena se especializar em JPQL?](#polêmica-vale-a-pena-se-especializar-em-jpql)
+<hr>
 
 # Objetivo
 
@@ -218,13 +238,13 @@ entidades associadas para muitos**".
 
 Só fazer um post com a requisição lá de cima e inserir.
 
-## Evitando degradação de perfomance (Lentidão JPA)
+## Evitando degradação de performance (Lentidão JPA)
 
 Nós podemos melhorar o desempenho da JPA usando ela de forma apropriada.
 
 Como evitar a lentidão da JPA? Com carregamento lazy, tratativas e transactional. 
 
-Grande vilão da JPA: indas e vendas desnecessárias ao banco de dados.
+Grande vilão da JPA: indas e vindas desnecessárias ao banco de dados.
 
 Uma causa comum: entidades associadas lazy carregando sob demanda.
 
@@ -236,19 +256,281 @@ Uma causa comum: entidades associadas lazy carregando sob demanda.
 
 ## Carregando EAGER e LAZY
 
+Temos um carregando padrão para entidades que estão associadas.
+
+ToOne - **EAGER**: Um carregamento apressado. Se carregarmos uma entidade e ela tiver outra entidade associada (para um),
+essa outra entidade virá junto, na mesma hora.
+
+ToMany - **LAZY**: Um carregamento mais preguiçoso/tardio. Se carregarmos uma entidade e tiver outras associadas (para
+muitos), essas outras não serão carregadas.
+
 ## Analisando o carregamento lazy dos funcionários
+
+Em virtude do comoportamento lazy (carregar de forma tardia) os objetos, devemos citar o seguinte: enquanto a sessão
+JPA estiver ATIVA, o acesso a um objeto associado pode provocar uma nova consulta ao banco.
+
+Ou seja, se buscarmos um departamento pelo ID, ele não irá trazer os funcionários. Mas se a sessão tiver ativa e dermos
+um ".getEmployes" nesse departamento a gente pode disparar uma nova consulta ao banco de dados.
+
+Exemplo:
+
+Postman 
+
+Pegando o department pelo Id 1 e depois, pegando os funcionários desse departamento.
+
+![img_8.png](img_8.png)
+
+Console
+
+![img_9.png](img_9.png)
+
 
 ## Alterando o atributo fetch dos relacionamentos
 
+E se quiséssemos trocar o comportamento acima e fazer somente uma consulta?
+
+Existem 3 formas:
+
+1. Atributo fetch no relacionamento da entidade (não recomendado);
+2. Cláusula JOIN FETCH;
+3. Consulta customizada (ideal).
+
+O item 1 não é recomendado, pois você muda o comportamento padrão daquele relacionamento. Então se fizermos essa 
+alteração, ela passa a ser o padrão da aplicação.
+
+Em resumo, ocorreria: sempre que buscássemos o departamento, viria também os funcionários.
+
+### Eager
+
+Na classe Department
+
+![img_10.png](img_10.png)
+
+Assim, ao buscar um departamento específico ele sempre fará o left join com a tabela employee.
+
+![img_11.png](img_11.png)
+
+<hr>
+
+### Lazy
+
+Se buscássemos um funcionário por seu ID, chamando os dados minimos, dessa forma:
+
+![img_12.png](img_12.png)
+
+Ele retornaria o que desejamos:
+
+![img_13.png](img_13.png)
+
+Mas no console, se observarmos, ele também consultará o departamento, pois como padrão estará EAGER.
+
+![img_14.png](img_14.png)
+
+Podemos fazer a troca do atributo para Lazy. LEMBRANDO: ESTA FORMA NÃO É O IDEAL.
+
+![img_15.png](img_15.png)
+
+Agora, a consulta será somente da tabela de funcionários:
+
+![img_16.png](img_16.png)
+
+Abaixo, faremos da forma correta! Veja 👇
+
 ## Otimizando consultas com cláusula JOIN FETCH
 
-## Entendendo Transactional e open-in-view
+❗Importante dizer, essa cláusula não funciona para busca paginadas do Spring.
 
-## Consultas com Query Methods
+Na classe de EmployeeRepository, criaremos um método com uma consulta personalizada
+
+Exemplo:
+
+```java
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+    @Query("SELECT obj FROM Employee obj")
+    List<Employee> findEmployeesWithDepartments();
+}
+```
+
+Importante ressaltar, essa consulta na query não é SQL e sim JPQL, uma linguagem de consulta da JPA. A semântica muda,
+**precisamos dar um "apelido" pro objeto que vamos buscar. Como colocamos acima: "obj".** E no final, **não precisa
+colocar o nome da tabela e sim da classe, conforme colocamos: Employee.**
+
+❗Importante
+
+A JPA mantém um "cache" das entidades gerenciadas na mesma sessão JPA.
+
+Ou seja, se você trouxer essas entidades para a memória, A JPA não volta ao banco se você precisar novamente delas
+(desde que seja a mesma seção JPA).
+
+Com o código daquele jeito acima, ele buscaria alguns departamentos até achar o correto.
+
+Para que isso não aconteça, utilizamos o **JOIN FETCH**, veja:
+
+```java
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+    @Query("SELECT obj FROM Employee obj JOIN FETCH obj.department")
+    List<Employee> findEmployeesWithDepartments();
+}
+```
+
+Consulta otimizada no console, buscando por funcionários já fazendo o Join no department:
+
+![img_17.png](img_17.png)
+
+## Entendendo Transactional
+
+A annotation @Transactional assegura:
+
+1. resolução da transação com o banco de dados;
+2. resolução de todas as pendências "lazy" com o banco de dados.
+
+
+## open-in-view
+
+A propriedade spring.jpa.open-in-view=false faz com que a sessão JPA seja encerrada antes de voltar para a camada 
+controller (camada web).
+
+**A ideia é que assim que o controlador receba a requisição, a JPA não esteja mais aberta. Tudo será feito na camada de
+serviço (pendências lazy, transações...).**
+
+## Consultas Customizadas
+
+Consultas personalizadas, com filtros e critérios específicos.
+
+## Query Methods
+
+No JpaRepository do Spring Data JPA, é possivel fazer uma consulta customizadas apenas pelo nome do método.
+
+Exemplo:
+
+```java
+public interface UserRepository extends Repository<User, Long> {
+    //escrevendo somente isso com os parâmetros, ele vai funcionar
+  List<User> findByEmailAddressAndLastname(String emailAddress, String lastname);
+}
+```
+
+[Veja mais](https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html)
+
+^ Embaixo nesse link tem uma tabela com "keywords" suportadas pela JPA para realizar os métodos.
+
+[Veja aqui as keywords](https://docs.spring.io/spring-data/jpa/reference/repositories/query-keywords-reference.html)
+
+**Vale a pena utilizar?**
+
+Para consultas muito simples, sim.
+
+Mais complexas? Melhor escrever a consulta, pois já dominamos a consulta SQL.
+
+### Buscando Employee por name
+
+![img_18.png](img_18.png)
+
+No Spring, criaremos um método para essa consulta, veja:
+
+No Controller:
+```java
+@GetMapping
+public ResponseEntity<List><EmployeeMinDTO>> findByName(
+        //default value é: se o nome não for informado, por padrão será
+        //uma string vazia
+        @RequestParam(name= "name", defaultValue = "") String name) {
+        
+    List<EmployeeMinDTO> result = service.findByName(name);
+    return ResponseEntity.ok(result);
+}
+```
+<hr>
+
+No Service:
+```java
+@Transactional(readOnly = true)
+public List<EmployeeMinDTO> findByName(String name) {
+    
+    //criaremos esse método abaixo no repository
+    List<Employee> result = repository.findByName(name);
+    
+    //convertendo o result acima para um tipo DTO
+    return result.stream().map(x -> new EmployeeMinDTO(x)).toList();
+}
+```
+<hr>
+
+No Repository:
+```java
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+    
+    //caso quiséssemos procurar por "maria" ou "Maria", colocar
+    // "IgnoreCase" no final dos métodos (aqui e no service também).
+    List<Employee> findByName(String name);
+}
+```
 
 ## Introdução sobre JPQL
 
-## Polêmica: vale a pena se especializar em JPQL
+É uma linguagem de consulta específica da JPA.
+
+Toda ferramente ORM geralmente possui uma linguagem ou ferramentas próprias para realização de consulta a banco de dado.
+
+A JPQL é parecida com a SQL, porém é adaptado para modelo de acesso a dados JPA.
+
+### Exemplo 1
+
+SQL:
+```sql
+SELECT *
+FROM tb_employee
+WHERE UPPER(name) LIKE 'MARIA%'
+```
+
+JPQL
+```sql
+SELECT obj
+
+//não escrevemos a tabela e sim Entidade + obj
+FROM Employee obj
+//obj.name pois estamos acessando o atributo
+WHERE UPPER(obj.name) LIKE 'MARIA%'
+```
+<hr>
+
+### Exemplo 2
+
+SQL:
+```sql
+SELECT tb_employee.*
+FROM tb_employee
+INNER JOIN tb_department ON tb_department.id = tb_employee.department_idWHERE tb_department.name = 'Financeiro'
+````
+
+JPQL:
+```sql
+SELECT obj
+           
+//não escrevemos a tabela e sim Entidade + obj
+FROM Employee obj
+
+//obj.department (para acessar dep dentro de employee) + .name para acessar o nome de department
+WHERE obj.department.name = 'Financeiro'
+```
+
+## Polêmica: vale a pena se especializar em JPQL?
+
+**Vantagens**:
+
+1. Algumas consultas podem ficar mais simples;
+2. Usufrui melhor do Spring Data JPA (paginação, JpaRepository);
+3. Os objetos resultantes são entidades gerenciadas pela JPA.
+   4. Se precisarmos dar uma ".get" será automaticamente feita a consulta auxiliar.
+
+**Desvantagens**:
+
+1. Consultas complexas podem ficar difíceis de escrever e validar (mais fácil escrever e testar a consulta SQL)
+diretamente na ferramenta de banco de dados;
+2. Não tem união (JPA 2.x);
+3. Curva de apredizada para uma tecnologia específica.
+
+Em suma, se for consulta simples usa **JPQL**. Se for mais específica e complexa, **SQL**.
 
 ## Preparando para os estudos de caso de consulta
 
