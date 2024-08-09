@@ -8,10 +8,18 @@
 - [Salvando entidade associada para um](#salvando-entidade-associada-para-um---pt-1-2-e-3)
     - [Exemplo 1 - Objeto aninhado](#1-objeto-aninhado)
     - [Exemplo 2 - Passando id direto na requisição](#2-passando-somente-o-id-do-department)
+<hr>
 
 - [Salvando entidade associada para muitos](#salvando-entidades-associadas-para-muitos)
+<hr>
 
-
+- [Evitando degradação de perfomance (Lentidão JPA)](#evitando-degradação-de-perfomance-lentidão-jpa)
+  - [Carregamento Eager e Lazy](#carregando-eager-e-lazy)
+  - [Analisando Lazy (Classe Employee)](#analisando-o-carregamento-lazy-dos-funcionários)
+  - [Alterando atributo fetch dos relacionamentos](#alterando-o-atributo-fetch-dos-relacionamentos)
+  - [Otimizando consultas com Join Fetch](#otimizando-consultas-com-cláusula-join-fetch)
+  - [Transactional e open-in-view](#entendendo-transactional-e-open-in-view)
+<hr>
     
 
 # Objetivo
@@ -70,7 +78,6 @@ POST http://localhost:8080/people
   }
 }
 ```
-
 
 ### O primeiro passo é criar um DTO para recebermos os dados e instanciar um objeto Java.
 
@@ -211,8 +218,21 @@ entidades associadas para muitos**".
 
 Só fazer um post com a requisição lá de cima e inserir.
 
+## Evitando degradação de perfomance (Lentidão JPA)
 
-## Evitando degradação de perfomance
+Nós podemos melhorar o desempenho da JPA usando ela de forma apropriada.
+
+Como evitar a lentidão da JPA? Com carregamento lazy, tratativas e transactional. 
+
+Grande vilão da JPA: indas e vendas desnecessárias ao banco de dados.
+
+Uma causa comum: entidades associadas lazy carregando sob demanda.
+
+[Projeto exemplo](https://github.com/devsuperior/aula-lazy)
+
+[Collection do Postman](https://www.postman.com/collections/d5efb333d1d308d52b7c)
+
+![img_7.png](img_7.png)
 
 ## Carregando EAGER e LAZY
 
