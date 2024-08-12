@@ -786,10 +786,84 @@ SOUT:
 
 ## URI 2621 Elaborando a consulta
 
+```sql
+SELECT products.name
+FROM products
+INNER JOIN providers ON products.id_providers = providers.id
+where products.amount BETWEEN 10 AND 20
+AND providers.name LIKE 'P%';
+```
+
 ### 2621 - SQL
 
+Criação da Projection. Como o retorno do exercício é string (name), retornaremos somente isso:
+
+```java
+public interface ProductMinProjection {
+
+    String getName();
+}
+
+```
+
+Criação do repository contendo método search:
+
+```java
+    @Query(nativeQuery = true, value = "SELECT products.name "
+    + "FROM products "
+    + "INNER JOIN providers ON products.id_providers = providers.id "
+    + "WHERE products.amount BETWEEN :min AND :max "
+    + "AND providers.name LIKE CONCAT(:beginName, '%')")
+    List<ProductMinProjection> search1(Integer min, Integer max, String beginName);
+```
+
+Criar DTO + construtor de conversão, conforme visto acima.
+
+Na application:
+
+```java
+	@Override
+	public void run(String... args) throws Exception {
+
+		List<ProductMinProjection> list1 = repository.search1(10, 20,"P");
+
+		List<ProductMinDTO> result = list1.stream().map(x -> new ProductMinDTO(x)).collect(Collectors.toList());
+
+		for (ProductMinDTO obj : result) {
+			System.out.println(obj);
+		}
+
+	}
+```
+
+SOUT:
+
+![img_24.png](img_24.png)
 
 ### 2621 - JPQL
+
+Consulta no repository: 
+
+```java
+    @Query("SELECT new com.devsuperior.uri2621.dto.ProductMinDTO(obj.name) "
+    + "FROM Product obj "
+    + "WHERE obj.amount BETWEEN :min and :max "
+    + "AND obj.provider.name LIKE CONCAT(:beginName, '%') ")
+    List<ProductMinDTO> search2(Integer min, Integer max, String beginName);
+```
+
+Application:
+
+```java
+		List<ProductMinDTO> result2 = repository.search2(10, 20, "P");
+		for (ProductMinDTO obj : result2) {
+			System.out.println(obj);
+		}
+```
+
+SOUT:
+
+![img_25.png](img_25.png)
 
 <hr>
 
