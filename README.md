@@ -37,10 +37,32 @@
   - [Query methods](#query-methods)
     - [Buscando employee por name](#buscando-employee-por-name)
   - [Introdução JPQL](#introdução-sobre-jpql)
-    - [Exemplo 1 - SQL](#exemplo-1---sql)
-    - [Exemplo 2 - JPQL]()
+    - [Exemplo 1](#exemplo-1)
+    - [Exemplo 2](#exemplo-2)
   - [Vale a pena se especializar em JPQL?](#polêmica-vale-a-pena-se-especializar-em-jpql)
 <hr>
+
+## Estudos de caso
+
+👇 Para utilizar nos casos de uso.
+
+- [Como fazer projeção de dados (limitar campo de pesquisa)](#projeção-de-dados-limitação-de-campo)
+- [Convertendo projeção para DTO](#convertendo-projection-para-dto)
+
+
+- [URI 2602 - Elaborando Consulta](#uri-2602---elaborando-consulta)
+  - [SQL](#2602---sql-)
+  - [JPQL](#2602---jpql)
+
+  
+- [URI 2611 - Elaborando consulta]()
+  - [SQL]()
+  - [JPQL]()
+
+
+- [URI 2621 - Elaborando consulta]()
+  - [SQL]()
+  - [JPQL]()
 
 # Objetivo
 
@@ -532,48 +554,266 @@ diretamente na ferramenta de banco de dados;
 
 Em suma, se for consulta simples usa **JPQL**. Se for mais específica e complexa, **SQL**.
 
-## Preparando para os estudos de caso de consulta
+## URI 2602 - Elaborando consulta
 
-## URI 2602 - Elaborando a consulta
+```sql
+SELECT name FROM customers WHERE state = 'RS';
+````
 
-## Baixando os projetos iniciados dos estudos de caso
+### Projeção de Dados (limitação de campo)
+
+Caso a gente queira fazer uma projeção (limitar campos de consulta, acessando somente os campos que precisamos), faremos
+o seguinte:
+
+Criaremos um pacote **projections**, com uma interface contendo somente os campos que a gente quer.
+
+```java
+public interface CustomerMinProjection {
+    String getname();
+}
+```
+
+E no Repository, podemos criar uma consulta para retornar uma lista de objetos dessa projection, veja:
+
+```java
+public interface CustomRepository extends JpaRepository<Customer, Long> {
+  //nativeQuery = SQL raíz, não SJPQL
+  @Query(nativeQuery = true, value = "SELECT name "
+          + "FROM customers "
+          + "WHERE UPPER(state) = UPPER(:state)")
+  List<CustomerMinProjection> search1(String state);
+}
+
+```
+
+❗Importante. Na prática, nós não utilizamos esse Projection e sim um DTO.
+
+## Convertendo Projection para DTO
+
+Criar um pacote DTO e uma classe CustomerMinDTO, contendo:
+
+```java
+public class CustomerMinDTO {
+
+    private String name;
+
+    public CustomerMinDTO() {
+
+    }
+
+    public CustomerMinDTO(String name) {
+        this.name = name;
+    }
+
+    //outro construtor convertendo de Projection para DTO
+    public CustomerMinDTO(CustomerMinProjection projection) {
+        name = projection.getname();
+    }
 
 
-## URI 2602 Spring Boot SQL
+    public String getName() {
+        return name;
+    }
 
+    public void setName(String name) {
+        this.name = name;
+    }
 
-## URI 2602 Spring Boot JPQL
+    @Override
+    public String toString() {
+      return "CustomerMinDTO{" +
+              "name='" + name + '\'' +
+              '}';
+    }
+}
+```
 
+Na classe Application, podemos implementar o CommandLineRunner, e executar a consulta!
+
+```java
+@SpringBootApplication
+public class Uri2602Application implements CommandLineRunner {
+
+    //repository importado
+  @Autowired
+  private CustomRepository customRepository;
+
+  public static void main(String[] args) {
+    SpringApplication.run(Uri2602Application.class, args);
+  }
+
+  @Override
+  public void run(String... args) throws Exception {
+      
+      //lista inicial da projection com a consulta customizada
+    List<CustomerMinProjection> list = customRepository.search1("RS");
+
+    List<CustomerMinDTO> result1 = list.stream().map(
+            //transformando cada elemento da lista acima em um DTO
+            x -> new CustomerMinDTO(x)
+    ).collect(Collectors.toList());
+
+    for (CustomerMinDTO obj : result1) {
+      System.out.println(obj);
+    }
+  }
+}
+```
+
+SOUT console:
+
+![img_20.png](img_20.png)
+
+### 2602 - SQL 
+
+No SQL usamos no Repository a "consulta raiz", conforme pode ser observado no parâmetro do @Query.
+
+### 2602 - JPQL
+
+Já no JPQL, precisamos dar "apelidos" para os nossos objetos, veja:
+
+```java
+    /*
+    leia-se: "SELECT new (objetos desse tipo 👇 + o nome do construtor
+    customizado que criamos. "obj.name" pois o apelido que damos para
+    cada objeto que vamos buscar, é obj.
+    */
+    @Query("SELECT new com.devsuperior.uri2602.dto.CustomerMinDTO(obj.name) "
+    + "FROM Customer obj "
+    + "WHERE upper(obj.state) = upper(:state) ")
+    List<CustomerMinDTO> search2(String state);
+```
+
+Fica um pouco verboso, pois precisamos instanciar com new ali em cima, utilizando a classe do DTO.
+
+Na classe application:
+
+```java
+		List<CustomerMinDTO> result2 = customRepository.search2("rs");
+		for (CustomerMinDTO obj : result2) {
+			System.out.println(obj);
+		}
+```
+
+SOUT:
+
+![img_21.png](img_21.png)
+
+<hr>
 
 ## URI 2611 Elaborando a consulta
 
+```sql
+select movies.id, movies.name
+FROM movies
+INNER JOIN genres ON movies.id_genres = genres.id
+WHERE genres.description = 'Action';
+```
 
-## URI 2611 Spring Boot SQL e JPQL
+### 2611 - SQL
 
+Criação do Repository com o método SQl, sendo o mesmo este:
+
+```java
+public interface MovieRepository extends JpaRepository<Movie, Long> {
+
+    @Query(nativeQuery = true, value = "SELECT movies.id, movies.name "
+    + "FROM movies "
+    + "INNER JOIN genres ON movies.id_genres = genres.id "
+    + "WHERE genres.description = :genreName")
+    List<MoviesMinProjection> search1(String genreName);
+}
+```
+
+Criação da Projection
+
+```java
+public interface MoviesMinProjection {
+    Long getId();
+    String getName();
+}
+```
+
+Código Application:
+```java
+	@Override
+	public void run(String... args) throws Exception {
+		List<MoviesMinProjection> list = movieRepository.search1("Action");
+		
+		List<MovieMinDTO> result = list.stream().map(
+				x -> new MovieMinDTO(x)
+		).collect(Collectors.toList());
+
+		for (MovieMinDTO obj : result) {
+			System.out.println(obj);
+		}
+	}
+```
+
+SOUT:
+
+![img_22.png](img_22.png)
+
+### 2611 - JPQL
+
+No Repository, usaremos a query diferente conforme já aprendemos, veja:
+
+```java
+    @Query("SELECT new com.devsuperior.uri2611.dto.MovieMinDTO(obj.id, obj.name) "
+    + "FROM Movie obj "
+    + "WHERE obj.genre.description = :genreName ")
+    List<MovieMinDTO> search2(String genreName);
+```
+
+Fica bem menos verboso, pois podemos acessar o genre direto no obj! Lembre-se: o obj, na verdade, é a classe Movie, 
+então podemos navegar nos seus atributos. Como ela possui o genre pela relacinamento entre eles, fica mais fácil.
+
+Na Application:
+
+```java
+		List<MovieMinDTO> result2 = movieRepository.search2("Action");
+
+		for (MovieMinDTO obj : result2) {
+			System.out.println(obj);
+		}
+```
+
+SOUT:
+
+![img_23.png](img_23.png)
+
+<hr>
 
 ## URI 2621 Elaborando a consulta
 
+### 2621 - SQL
 
-## URI 2621 Spring Boot SQL e JPQL
 
+### 2621 - JPQL
+
+<hr>
 
 ## Dica - pratique um pouco se você estiver precisando
+
+<hr>
 
 
 ## URI 2609 Elaborando a consulta
 
+### 2609 - SQL
 
-## URI 2609 Spring Boot SQL e JPQL
+### 2609 - JPQL
+
+<hr>
 
 
 ## URI 2737 Elaborando a consulta
 
-
 ## URI 2737 Solução alternativa
 
 
-## URI 2737 Spring Boot SQL
-
+## URI 2737 - SQL
+<hr>
 
 ## URI 2990 Elaborando a consulta
 
@@ -581,7 +821,10 @@ Em suma, se for consulta simples usa **JPQL**. Se for mais específica e complex
 ## URI 2990 Solução alternativa com LEFT JOIN
 
 
-## URI 2990 Spring Boot SQL e JPQL
+## U2990 - SQL
+
+## U2990 - JPQL
+<hr>
 
 
 ## DSCommerce consulta de produtos por nome
