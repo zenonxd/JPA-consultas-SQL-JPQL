@@ -867,29 +867,169 @@ SOUT:
 
 <hr>
 
-## Dica - pratique um pouco se você estiver precisando
-
-<hr>
-
-
 ## URI 2609 Elaborando a consulta
+
+```sql
+Select categories.name, SUM(products.amount) as sum
+From Categories
+INNER JOIN products ON products.id_categories = categories.id
+
+usar group by pra juntar os valores repetidos
+GROUP BY categories.name
+```
 
 ### 2609 - SQL
 
+Mesmo de sempre, criar os pacotes de DTO e Projections.
+
+No repository:
+```java
+    @Query(nativeQuery = true, value = "SELECT categories.name, SUM(products.amount) as sum "
+    + "FROM Categories "
+    + "INNER JOIN products ON products.id_categories = categories.id "
+    + "GROUP BY categories.name")
+    List<CategorySumProjection> search1();
+```
+
+Application:
+```java
+	@Override
+	public void run(String... args) throws Exception {
+
+		List<CategorySumProjection> list1 = repository.search1();
+		List<CategorySumDTO> result1 = list1.stream().map(x -> new CategorySumDTO(x)).collect(Collectors.toList());
+
+		for (CategorySumDTO obj : result1) {
+			System.out.println(obj);
+		}
+	}
+```
+
+SOUT:
+
+![img_26.png](img_26.png)
+
+
 ### 2609 - JPQL
 
-<hr>
+Repository:
 
+Muito interessante entendermos essa query e lembrar do relacionamento um pra muitos.
+
+Como um produto pode ter muitas categorias, dentro da entidade Product, temos o relacionamento:
+
+```java
+	@ManyToOne
+	@JoinColumn(name = "id_categories")
+	private Category category;
+```
+
+Portanto, ao declarar abaixo o Product como "obj", podemos acessar suas caracteristicas (entidades).
+
+```java
+    @Query("SELECT new com.devsuperior.uri2609.dto.CategorySumDTO(obj.category.name, SUM(obj.amount)) "
+    + "FROM Product obj "
+    + "GROUP BY obj.category.name")
+    List<CategorySumDTO> search2();
+```
+
+SOUT:
+
+![img_27.png](img_27.png)
+
+<hr>
 
 ## URI 2737 Elaborando a consulta
 
-## URI 2737 Solução alternativa
+Podemos fazer 3 selects e unir cada um com UNION ALL. Se usa UNION ALL porque se fosse somente UNION, casos repetidos
+iriam aparecer.
 
+```sql
+(select name, customers_number
+from lawyers
+ORDER BY customers_number DESC
+LIMIT 1)
+
+UNION ALL
+
+(select name, customers_number
+from lawyers
+ORDER BY customers_number ASC
+LIMIT 1)
+
+UNION ALL
+
+(SELECT 'Average', ROUND(AVG(customers_number), 0)
+FROM lawyers)
+```
+
+O campo 'Average' foi criado dessa forma, passando somente no Select.
+
+## URI 2737 Solução alternativa (MAX e MIN)
+
+Uma outra forma de solucionar o exercício acima, é usar MAX e Min. Mas para isso precisaremos fazer uma subconsulta.
+
+Trocaremos o ORDER BY por WHERE e faremos a consulta, ou seja, UM NOVO SELECT (tipo um condicional).
+
+```sql
+ (select name, customers_number
+  from lawyers
+  WHERE customers_number = (
+    SELECT MAX(customers_number)
+    FROM lawyers
+  ))
+
+ UNION ALL
+
+ (select name, customers_number
+  from lawyers
+  WHERE customers_number = (
+    SELECT MIN(customers_number)
+    FROM lawyers
+  ))
+
+ UNION ALL
+
+ (SELECT 'Average', ROUND(AVG(customers_number), 0)
+  FROM lawyers)
+```
 
 ## URI 2737 - SQL
+
+Dessa vez, para que o nosso programa identifique a coluna customers_number, em virtude do "_", precisaremos dar um apelido
+a ela na Query, veja:
+
+![img_28.png](img_28.png)
+
+Na application:
+
+```java
+	@Override
+	public void run(String... args) throws Exception {
+		List<LawyerMinProjection> search1 = repository.search1();
+		List<LawyerMinDTO> result = search1.stream().map(x -> new LawyerMinDTO(x)).collect(Collectors.toList());
+
+		for (LawyerMinDTO obj : result) {
+			System.out.println(obj);
+		}
+
+	}
+```
+
+SOUT: Ele fará tudo + as Unions certinho!
+
+![img_29.png](img_29.png)
+
+
+## URI 2737 - JPQL
+
+Até a presente data do curso, não existe nenhuma união no JPQL. Poderia ser feito de outra forma equivalente, mas não
+valeria a pena.
+
 <hr>
 
 ## URI 2990 Elaborando a consulta
+
 
 
 ## URI 2990 Solução alternativa com LEFT JOIN
