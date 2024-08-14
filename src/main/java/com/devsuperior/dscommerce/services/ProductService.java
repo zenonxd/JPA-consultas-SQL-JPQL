@@ -35,8 +35,8 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ProductDto> findAll(Pageable pageable) {
-        Page<Product> products = productRepository.findAll(pageable);
+    public Page<ProductDto> findAll(String name, Pageable pageable) {
+        Page<Product> products = productRepository.searchByName(name, pageable);
 
         //pode fazer .map direto pois Page já é uma stream
         return products.map(x -> new ProductDto(x));
