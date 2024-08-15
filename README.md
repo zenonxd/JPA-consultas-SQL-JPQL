@@ -50,7 +50,9 @@ Todos os estudos de caso estão localizados [neste repositório](https://github.
 <hr>
 
 - [DSCommerce consulta de produtos por nome](#dscommerce-consulta-de-produtos-por-nome)
-
+- [Evitando consulta lenta - many to many](#evitando-consultas-lentas-muitos-para-muitos)
+- [Evitando consulta lenta - many to one (countQuery)](#evitando-consultas-lentas-muitos-para-um-com-countquery)
+  - [Busca paginada no repository](#para-fazer-uma-consulta-paginada-no-repository)
 
 
 
