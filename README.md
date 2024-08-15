@@ -46,23 +46,13 @@
 
 👇 Para utilizar nos casos de uso.
 
-- [Como fazer projeção de dados (limitar campo de pesquisa)](#projeção-de-dados-limitação-de-campo)
-- [Convertendo projeção para DTO](#convertendo-projection-para-dto)
+Todos os estudos de caso estão localizados [neste repositório](https://github.com/zenonxd/bdsconsultas-main)
+<hr>
+
+- [DSCommerce consulta de produtos por nome](#dscommerce-consulta-de-produtos-por-nome)
 
 
-- [URI 2602 - Elaborando Consulta](#uri-2602---elaborando-consulta)
-  - [SQL](#2602---sql-)
-  - [JPQL](#2602---jpql)
 
-  
-- [URI 2611 - Elaborando consulta]()
-  - [SQL]()
-  - [JPQL]()
-
-
-- [URI 2621 - Elaborando consulta]()
-  - [SQL]()
-  - [JPQL]()
 
 # Objetivo
 
@@ -649,5 +639,58 @@ Usamos o @RequestParam para extrair os parâmetros de consulta :)
 
 ## Evitando consultas lentas muitos-para-muitos
 
+[Repositório](https://github.com/devsuperior/aulao_nmais1)
+
+Problema N + 1
+
+Basicamente, um sistema de produtos e categorias e entre eles terá uma relação many to many. Ou seja: um produto pode
+ter muitas categorias e uma categoria pode ter muitos produtos.
+
+E daí queremos fazer uma busca paginada, buscando os produtos já com as suas categorias.
+
+Para evitar que ao realizarmos essa consulta, o hibernate faça diversas consultas para buscar os objetos que estão
+relacionados, faremos o seguinte:
+
+**No repository**, faremos uma consulta customizada com JPQL. 
+
+![img_39.png](img_39.png)
+
+❗Caso queira fazer uma busca paginada com Join Fetch, veja o [tópico abaixo](#para-fazer-uma-consulta-paginada-no-repository)
+
+Essa query, fará exatamente o papel dessa query SQL:
+
+```sql
+SELECT * FROM tb_product 
+	INNER JOIN tb_product_category ON tb_product.id = tb_product_category.product_id
+	INNER JOIN tb_category ON tb_category.id = tb_product_category.category_id
+	WHERE tb_product.id IN (1,2,3,4,5)
+```
+<hr>
+
+
+**No service**, utilizaremos este método:
+
+A gente mantém o ".findAll" padrão do repository que retornará um Pageable, e transformaremos isso numa lista.
+
+Depois, transformaremos essa lista em um DTO.
+
+![img_40.png](img_40.png)
+<hr>
+
+**No controller**:
+
+![img_41.png](img_41.png)
 
 ## Evitando consultas lentas muitos-para-um com countQuery
+
+[Repositório](https://github.com/devsuperior/jpa-queries1)
+
+Sabemos que para realizar a consulta no banco de dados, podemos utilizar o SQL ou JPQL.
+
+Entretanto, essas consultas podem se tornar ineficientes por fazerem diversas indas e vindas no banco de dados.
+
+### Para fazer uma consulta Paginada no Repository
+
+Usaremos dentro da query um countQuery, veja:
+
+![img_42.png](img_42.png)
